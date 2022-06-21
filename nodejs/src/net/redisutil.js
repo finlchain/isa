@@ -1,101 +1,48 @@
+//
 const redis = require('redis');
-const config = require('../../config/config.js');
-const define = require('../../config/define.js')
-const logger = require('../utils/logger.js');
-const netutil = require('../net/netutil.js');
 const ip = require("ip");
-const cmdRedis = define.cmdRedis;
 
+//
+const config = require('./../../config/config.js');
+const define = require('./../../config/define.js')
+const netUtil = require('./../net/netUtil.js');
+const redisHandler = require('./../net/redisHandler.js');
+const util = require('./../utils/commonUtil.js');
+const logger = require('./../utils/winlog.js');
+
+//
 let publisher;
-let consCmdNotiSubscriber;
+let ctrlNotiSubscriber;
 let cmdNotiSubscriber;
 
-module.exports.setRedis = async function (socket) {
-    publisher = redis.createClient(config.redisConfig);
-    consCmdNotiSubscriber = redis.createClient(config.redisConfig);
-    cmdNotiSubscriber = redis.createClient(config.redisConfig);
+//
+module.exports.setRedis = async (socket) => {
+    publisher = redis.createClient(config.REDIS_CONFIG);
+    ctrlNotiSubscriber = redis.createClient(config.REDIS_CONFIG); // between ISA and NNA
+    cmdNotiSubscriber = redis.createClient(config.REDIS_CONFIG); // between ISA and SCA
+
+    //subscribe -> waitting response FROM NNA
+    ctrlNotiSubscriber.on("message", async function (ch, respMsg) {
+        await redisHandler.subNnaCtrlNotiCB(socket, ch, respMsg);
+    });
+    ctrlNotiSubscriber.subscribe(config.REDIS_CH.CTRL_NOTI_ACKS);
 
     //subscribe -> waitting response FROM SCA
-    consCmdNotiSubscriber.on("message", async function (channel, response_message) {
-        logger.debug(" [SUB] [" + channel + "] " + response_message);
-        // NN Start, CN Start
-        if (response_message.split(cmdRedis.split_space)[1] == cmdRedis.req_start) {
-            let start_res = {
-                ip: ip.address().toString(),
-                role: response_message.split(cmdRedis.split_space)[cmdRedis.kind],
-                status: cmdRedis.res_start
-            }
-            await netutil.writeData(socket, JSON.stringify(start_res));
-        }
-        // rr update, next, start, stop, leave all .. complete
-        else if (response_message.split(cmdRedis.split_space)[2] == cmdRedis.req_complete) {
-            let suc_res = {
-                ip: ip.address().toString(),
-                kind: response_message.split(cmdRedis.split_space)[cmdRedis.kind] + cmdRedis.split_space + response_message.split(cmdRedis.split_space)[1],
-                status: response_message.split(cmdRedis.split_space)[2]
-            }
-            await netutil.writeData(socket, JSON.stringify(suc_res));
-        }
-        else {
-            logger.err("invalid redis form");
-        }
+    cmdNotiSubscriber.on("message", async function (ch, respMsg) {
+        await redisHandler.subScaCmdNotiCB(socket, ch, respMsg);
     });
-    consCmdNotiSubscriber.subscribe(config.redisChannel.ctrlnotiAcks);
-
-    cmdNotiSubscriber.on("message", async function (channel, response_message) {
-        logger.debug(" [SUB] [" + channel + "] " + response_message);
-        let splitMsg = response_message.split(cmdRedis.split_space);
-        let msgKind = splitMsg[cmdRedis.kind];
-        if (msgKind == cmdRedis.req_contract) {
-            let suc_res = {
-                ip: ip.address().toString(),
-                kind: msgKind,
-                status: splitMsg[cmdRedis.status]
-            }
-            await netutil.writeData(socket, JSON.stringify(suc_res));
-        }
-        else if (msgKind == cmdRedis.req_sca) {
-            let replNoti = cmdRedis.res_replSet1 + ip.address().toString() + cmdRedis.split_space + splitMsg[cmdRedis.res_replSet2] + cmdRedis.split_space + splitMsg[cmdRedis.res_replSet3];
-            await netutil.writeData(socket, replNoti);
-        }
-        else if (msgKind == cmdRedis.req_dn || msgKind == cmdRedis.req_dbn) {
-            let start_res = {
-                ip: ip.address().toString(),
-                role: msgKind,
-                status: cmdRedis.res_start
-            }
-            await netutil.writeData(socket, JSON.stringify(start_res));
-        }
-        else if (msgKind == cmdRedis.req_reward) {
-            let reward_res;
-            if (splitMsg[cmdRedis.detail_kind] == cmdRedis.req_reward_spread) {
-                reward_res = {
-                    ip: ip.address().toString(),
-                    kind: msgKind + cmdRedis.split_space + splitMsg[cmdRedis.detail_kind],
-                    status: splitMsg[cmdRedis.detail_kind_status]
-                }
-            }
-            else {
-                reward_res = {
-                    ip: ip.address().toString(),
-                    kind: msgKind,
-                    status: splitMsg[cmdRedis.status]
-                }
-            }
-            await netutil.writeData(socket, JSON.stringify(reward_res));
-        }
-    });
-    cmdNotiSubscriber.subscribe(config.redisChannel.cmdnotiAcks);
+    cmdNotiSubscriber.subscribe(config.REDIS_CH.CMD_NOTI_ACKS);
 }
 
-module.exports.write = async function (channel, data) {
+//
+module.exports.write = async (ch, data) => {
     //publish -> send to data
-    if (channel == config.redisChannel.ctrlnoti) {
-        logger.info(" [PUB] [" + channel + "] " + data);
-        await publisher.publish(channel, data);
+    if (ch === config.REDIS_CH.CTRL_NOTI) {
+        logger.debug(" [PUB] [" + ch + "] " + data);
+        await publisher.publish(ch, data);
     }
-    else if (channel == config.redisChannel.cmdnoti) {
-        logger.info(" [PUB] [" + channel + "] " + data);
-        await publisher.publish(channel, data);
+    else if (ch === config.REDIS_CH.CMD_NOTI) {
+        logger.debug(" [PUB] [" + ch + "] " + data);
+        await publisher.publish(ch, data);
     }
 }
