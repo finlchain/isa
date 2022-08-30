@@ -5,7 +5,7 @@ require('date-utils');
 
 //
 let LOG_LEVEL_FILE = "debug";
-let LOG_LEVEL_CONSOLE = "debug";
+let LOG_LEVEL_CONSOLE = "info";
 
 //let LOGFILE_PATH = './log/isa.log';
 let LOGFILE_PATH = '/disk/data/log/isa.log';

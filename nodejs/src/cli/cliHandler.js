@@ -16,7 +16,7 @@ const logger = require('./../utils/winlog.js');
 module.exports.handler = async (cmd) => {
     let retVal = true;
 
-    logger.info('ISA CLI Received Data : ' + cmd);
+    logger.debug('ISA CLI Received Data : ' + cmd);
 
     let cmdSplit = cmd.split(' ');
 
@@ -89,7 +89,7 @@ module.exports.handler = async (cmd) => {
         let txCnt = 1;
         let myContractTest = define.CMD_CTRL_NOTI.req_contract_test + ' ';
 
-        logger.info("cmdSplit[2] : " + cmdSplit[2]);
+        logger.debug("cmdSplit[2] : " + cmdSplit[2]);
         if (!isNaN(Number(cmdSplit[2])))
         {
             txCnt = Number(cmdSplit[2]);

@@ -79,7 +79,7 @@ module.exports.isClient = async () => {
             logger.warn("[TCP] [IS] " + "Socket Timed Out");
         });
         this.on("close", function () {
-            logger.info("[TCP] [IS] " + "Socket Closed");
+            logger.warn("[TCP] [IS] " + "Socket Closed");
         });
     });
     return isaSocket;

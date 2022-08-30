@@ -4,9 +4,10 @@ require('winston-daily-rotate-file');
 require('date-utils');
 
 //
-let LOG_LEVEL = "info";
+let LOG_LEVEL_FILE = "debug";
+let LOG_LEVEL_CONSOLE = "info";
 
-let LOGFILE_PATH = './log/NN.log';
+let LOGFILE_PATH = '/disk/data/log/NN.log';
 
 // let alignColorsAndTime = winston.format.combine(
 //     winston.format.colorize({
@@ -55,14 +56,15 @@ const getLogColor = (logLevel) => {
 //
 var applog = winston.createLogger({
     transports: [
-        // new winston.transports.DailyRotateFile({
-        //     filename: LOGFILE_PATH, // store log on file name : system.log
-        //     zippedArchive: false, // isCompress?
-        //     format: winston.format.printf(
-        //         info => `[${Date.now()}] [${info.level.toUpperCase().slice(0,1)}] ${info.message}`)
-        // }),
+        new winston.transports.DailyRotateFile({
+            filename: LOGFILE_PATH, // store log on file name : system.log
+            zippedArchive: false, // isCompress?
+            level : LOG_LEVEL_FILE,
+            format: winston.format.printf(
+                info => `[${Date.now()}] [${info.level.toUpperCase().slice(0,1)}] ${info.message}`)
+        }),
         new winston.transports.Console({
-            level : LOG_LEVEL,
+            level : LOG_LEVEL_CONSOLE,
             format : winston.format.printf(
                 info => `[${Date.now()}] [${getLogColor(info.level)}${info.level.toUpperCase().slice(0,1)}${getLogColor('reset')}] ${info.message}`)
             // format : alignColorsAndTime

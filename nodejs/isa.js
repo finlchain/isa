@@ -11,7 +11,7 @@ const logger = require('./src/utils/winlog.js');
 //
 const main = async() => {
     //
-    logger.info("config.MARIA_CONFIG : " + JSON.stringify(config.MARIA_CONFIG));
+    logger.debug("config.MARIA_CONFIG : " + JSON.stringify(config.MARIA_CONFIG));
     //
     cryptoUtil.setMyKey(config.myKeyPathConfig);
 

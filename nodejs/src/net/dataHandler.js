@@ -77,7 +77,7 @@ module.exports.cmdChildProcess = async (socket, msg, myRole) => {
     let msgJson = JSON.parse(msg);
 
     logger.info("Command from IS, myRole : " + myRole + ", msgJson.cmd : " + msgJson.cmd);
-    logger.debug("msgJson.data : " + JSON.stringify(msgJson.data));
+    logger.info("msgJson.data : " + JSON.stringify(msgJson.data));
 
     //
     let splitMsg = msgJson.cmd.split(' ');
