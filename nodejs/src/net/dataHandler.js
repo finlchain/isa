@@ -145,10 +145,20 @@ module.exports.cmdChildProcess = async (socket, msg, myRole) => {
         await this.startNodeProcess(myRole);
     }
     // 4. block gen start
+    // FIXME: check nna/conf/rr_net.json and last blk num
     else if (msgJson.cmd === cmd.req_bg_start)
     {
-        await redisUtil.write(cmd.redis_cmd_noti, cmd.req_bg_start);
-        await redisUtil.write(cmd.redis_ctrl_noti, cmd.req_bg_start);
+        let lastBN = await dbNNHandler.selectMaxBlkNumFromBlkContents();
+        let RR_NET = JSON.parse(fs.readFileSync(config.CFG_PATH.NET_CFG.NNA_RRNET_JSON, 'binary'));
+        let startBN = RR_NET.NET.TIER[0].START_BLOCK;
+        if (Number(lastBN) + 1 == Number(startBN)) {
+            logger.info(`== == == BLOCK GENERATION STARTS FROM ... ${startBN} == == ==`);
+            await redisUtil.write(cmd.redis_cmd_noti, cmd.req_bg_start);
+            await redisUtil.write(cmd.redis_ctrl_noti, cmd.req_bg_start);
+        } else {
+            logger.error(`============== CHECK START BLOCK NUM: ${startBN}`)
+            logger.error(`============== CHECK LAST BLOCK NUM: ${lastBN}`)
+        }
     }
     // 5. block gen stop
     else if (msgJson.cmd === cmd.req_bg_stop)
